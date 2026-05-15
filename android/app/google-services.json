@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "235333300767",
+    "project_id": "dbparcialmiranda",
+    "storage_bucket": "dbparcialmiranda.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:235333300767:android:7845bbdf79d84d2cd5db2a",
+        "android_client_info": {
+          "package_name": "com.example.consolidado2miranda"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDxwc_FpN2X8GFlwJQnp2l2YVd_SaoA0G0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:235333300767:android:b2adbcf88b2d9d96d5db2a",
+        "android_client_info": {
+          "package_name": "com.example.parcialmiranda"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDxwc_FpN2X8GFlwJQnp2l2YVd_SaoA0G0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
