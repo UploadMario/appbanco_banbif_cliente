@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../model/cliente_usuario.dart';
+import '../../model/credito.dart';
+import '../../model/movimiento.dart';
+import '../../navigation/app_routes.dart';
 import '../../ui/theme/app_colors.dart';
 import '../../viewmodel/home_viewmodel.dart';
 import '../../widgets/header.dart';
@@ -15,17 +18,17 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   final HomeViewModel viewModel = HomeViewModel();
+  final _money = NumberFormat.currency(locale: 'es_PE', symbol: 'S/ ');
   int currentIndex = 0;
   bool initialized = false;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (!initialized) {
-      final usuario = ModalRoute.of(context)?.settings.arguments as ClienteUsuario?;
-      if (usuario != null) viewModel.cargarDatos(usuario);
-      initialized = true;
-    }
+    if (initialized) return;
+    final usuario = ModalRoute.of(context)?.settings.arguments as ClienteUsuario?;
+    if (usuario != null) viewModel.cargarDatos(usuario);
+    initialized = true;
   }
 
   @override
@@ -36,72 +39,513 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final usuario = ModalRoute.of(context)?.settings.arguments as ClienteUsuario?;
-    final money = NumberFormat.currency(locale: 'es_PE', symbol: 'S/ ');
-
-    return Scaffold(
-      body: Column(
-        children: [
-          Header(title: 'BanBif', subtitle: 'Hola, ${usuario?.nombre ?? 'Cliente'}', onLogout: () => Navigator.pushReplacementNamed(context, '/')),
-          Expanded(
-            child: AnimatedBuilder(
-              animation: viewModel,
-              builder: (context, _) {
-                if (viewModel.loading) return const Center(child: CircularProgressIndicator());
-                return ListView(
-                  padding: const EdgeInsets.all(16),
-                  children: [
-                    _summaryCard('Cuenta de ahorros', money.format(viewModel.cuenta?.saldo ?? 0), viewModel.cuenta?.numeroCuenta ?? 'Sin cuenta', Icons.savings, AppColors.primary),
-                    const SizedBox(height: 12),
-                    _summaryCard(viewModel.credito?.producto ?? 'Crédito activo', money.format(viewModel.credito?.montoPendiente ?? 0), 'Cuota mensual: ${money.format(viewModel.credito?.cuotaMensual ?? 0)}', Icons.credit_score, AppColors.secondary),
-                    const SizedBox(height: 18),
-                    const Text('Últimos movimientos', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 8),
-                    ...viewModel.movimientos.map((movimiento) => Card(
-                      child: ListTile(
-                        leading: Icon(movimiento.tipo == 'INGRESO' ? Icons.arrow_downward : Icons.arrow_upward, color: movimiento.tipo == 'INGRESO' ? AppColors.success : AppColors.error),
-                        title: Text(movimiento.descripcion),
-                        subtitle: Text(DateFormat('dd/MM/yyyy').format(movimiento.fecha)),
-                        trailing: Text(money.format(movimiento.monto), style: const TextStyle(fontWeight: FontWeight.bold)),
-                      ),
-                    )),
-                  ],
-                );
-              },
+    return AnimatedBuilder(
+      animation: viewModel,
+      builder: (context, _) {
+        final usuario = viewModel.usuario;
+        return Scaffold(
+          backgroundColor: AppColors.background,
+          body: SafeArea(
+            top: false,
+            child: Column(
+              children: [
+                Header(
+                  title: _title,
+                  subtitle: 'Hola, ${usuario?.nombre.isEmpty == false ? usuario!.nombre : 'Cliente BanBif'}',
+                  onLogout: _logout,
+                ),
+                if (viewModel.saving) const LinearProgressIndicator(minHeight: 3),
+                Expanded(child: _body()),
+              ],
             ),
           ),
-        ],
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: currentIndex,
-        selectedItemColor: AppColors.primary,
-        unselectedItemColor: Colors.grey,
-        onTap: (index) => setState(() => currentIndex = index),
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Inicio'),
-          BottomNavigationBarItem(icon: Icon(Icons.account_balance), label: 'Cuentas'),
-          BottomNavigationBarItem(icon: Icon(Icons.payments), label: 'Créditos'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Perfil'),
+          bottomNavigationBar: NavigationBar(
+            selectedIndex: currentIndex,
+            onDestinationSelected: (index) => setState(() => currentIndex = index),
+            destinations: const [
+              NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'Inicio'),
+              NavigationDestination(icon: Icon(Icons.wallet_outlined), selectedIcon: Icon(Icons.wallet), label: 'Productos'),
+              NavigationDestination(icon: Icon(Icons.request_quote_outlined), selectedIcon: Icon(Icons.request_quote), label: 'Solicitar'),
+              NavigationDestination(icon: Icon(Icons.notifications_outlined), selectedIcon: Icon(Icons.notifications), label: 'Actividad'),
+              NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: 'Perfil'),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  String get _title => const ['Resumen', 'Productos', 'Solicitud', 'Actividad', 'Perfil'][currentIndex];
+
+  Widget _body() {
+    if (viewModel.loading) return const Center(child: CircularProgressIndicator());
+    if (viewModel.usuario == null) {
+      return _state(Icons.lock_outline, 'Sesion no disponible', 'Vuelve a iniciar sesion para continuar.');
+    }
+    final pages = [_home(), _products(), _request(), _activity(), _profile()];
+    return Column(
+      children: [
+        if (viewModel.error != null)
+          MaterialBanner(
+            content: Text(viewModel.error!),
+            leading: const Icon(Icons.error_outline, color: AppColors.error),
+            actions: [
+              TextButton(
+                onPressed: () => viewModel.cargarDatos(viewModel.usuario!),
+                child: const Text('Reintentar'),
+              ),
+            ],
+          ),
+        Expanded(child: pages[currentIndex]),
+      ],
+    );
+  }
+
+  Widget _home() {
+    final cuenta = viewModel.cuentaPrincipal;
+    final credito = viewModel.creditoPrincipal;
+    return RefreshIndicator(
+      onRefresh: () => viewModel.cargarDatos(viewModel.usuario!),
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          _heroCard(
+            'Saldo disponible',
+            cuenta == null ? 'Sin cuentas' : _format(cuenta.saldo),
+            cuenta?.numeroCuenta ?? 'Tus productos apareceran aqui',
+            Icons.account_balance_wallet,
+            () => setState(() => currentIndex = 1),
+          ),
+          const SizedBox(height: 12),
+          _heroCard(
+            credito?.producto.isNotEmpty == true ? credito!.producto : 'Credito BanBif',
+            credito == null ? 'Sin creditos activos' : _format(credito.montoPendiente),
+            credito == null ? 'Solicita capital de trabajo en minutos' : 'Estado: ${credito.estado}',
+            Icons.credit_score,
+            () => setState(() => currentIndex = credito == null ? 2 : 1),
+          ),
+          const SizedBox(height: 18),
+          _sectionTitle('Ultimos movimientos'),
+          ...viewModel.movimientos.take(4).map(_movementTile),
+          if (viewModel.movimientos.isEmpty)
+            _state(Icons.receipt_long_outlined, 'Sin movimientos', 'Cuando haya desembolsos o pagos se mostraran aqui.'),
         ],
       ),
     );
   }
 
-  Widget _summaryCard(String title, String value, String subtitle, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(22)),
-      child: Row(
+  Widget _products() {
+    return RefreshIndicator(
+      onRefresh: () => viewModel.cargarDatos(viewModel.usuario!),
+      child: ListView(
+        padding: const EdgeInsets.all(16),
         children: [
-          Icon(icon, color: Colors.white, size: 36),
-          const SizedBox(width: 14),
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(title, style: const TextStyle(color: Colors.white70)),
-            Text(value, style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
-            Text(subtitle, style: const TextStyle(color: Colors.white70)),
-          ])),
+          _sectionTitle('Cuentas'),
+          if (viewModel.cuentas.isEmpty)
+            _compactEmpty('No hay cuentas registradas')
+          else
+            ...viewModel.cuentas.map((item) => _infoCard(
+                  title: item.tipo,
+                  subtitle: '${_mask(item.numeroCuenta)} | ${item.moneda}',
+                  value: _format(item.saldo),
+                  icon: Icons.account_balance,
+                  color: AppColors.primary,
+                )),
+          _sectionTitle('Tarjetas'),
+          if (viewModel.tarjetas.isEmpty)
+            _compactEmpty('No hay tarjetas registradas')
+          else
+            ...viewModel.tarjetas.map((item) => _infoCard(
+                  title: item['tipo']?.toString() ?? 'Tarjeta',
+                  subtitle: '${item['numero_enmascarado'] ?? '****'} | ${item['estado'] ?? ''}',
+                  value: _format((item['linea_disponible'] as num?)?.toDouble() ?? 0),
+                  icon: Icons.credit_card,
+                  color: AppColors.secondary,
+                )),
+          _sectionTitle('Creditos'),
+          if (viewModel.creditos.isEmpty)
+            _compactEmpty('No hay creditos desembolsados')
+          else
+            ...viewModel.creditos.map((credito) => _creditCard(credito)),
         ],
       ),
     );
+  }
+
+  Widget _request() {
+    return _CreditRequestForm(viewModel: viewModel, onDone: () => viewModel.cargarDatos(viewModel.usuario!));
+  }
+
+  Widget _activity() {
+    return RefreshIndicator(
+      onRefresh: () => viewModel.cargarDatos(viewModel.usuario!),
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          _sectionTitle('Movimientos'),
+          if (viewModel.movimientos.isEmpty)
+            _compactEmpty('No hay movimientos')
+          else
+            ...viewModel.movimientos.map(_movementTile),
+          _sectionTitle('Notificaciones'),
+          if (viewModel.notificaciones.isEmpty)
+            _compactEmpty('No hay notificaciones')
+          else
+            ...viewModel.notificaciones.map((item) => Card(
+                  child: ListTile(
+                    leading: Icon(
+                      item['leido'] == true ? Icons.mark_email_read_outlined : Icons.notifications_active_outlined,
+                      color: item['leido'] == true ? AppColors.textSecondary : AppColors.accent,
+                    ),
+                    title: Text(item['titulo']?.toString() ?? 'Notificacion'),
+                    subtitle: Text(item['mensaje']?.toString() ?? ''),
+                  ),
+                )),
+        ],
+      ),
+    );
+  }
+
+  Widget _profile() {
+    final perfil = viewModel.perfil ?? {};
+    final usuario = viewModel.usuario!;
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        const CircleAvatar(
+          radius: 42,
+          backgroundColor: Color(0xFFE5F4FE),
+          child: Icon(Icons.person, color: AppColors.primary, size: 44),
+        ),
+        const SizedBox(height: 14),
+        Text(usuario.nombre, textAlign: TextAlign.center, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
+        Text(usuario.correo, textAlign: TextAlign.center, style: const TextStyle(color: AppColors.textSecondary)),
+        const SizedBox(height: 18),
+        Card(
+          child: Column(
+            children: [
+              _profileTile(Icons.badge_outlined, 'Documento', perfil['documento']?.toString() ?? usuario.dni),
+              _profileTile(Icons.phone_outlined, 'Telefono', perfil['telefono']?.toString() ?? 'No registrado'),
+              _profileTile(Icons.email_outlined, 'Correo', perfil['correo']?.toString() ?? usuario.correo),
+              _profileTile(Icons.storefront_outlined, 'Negocio', perfil['negocio_nombre']?.toString() ?? 'No registrado'),
+              _profileTile(Icons.verified_user_outlined, 'Estado', perfil['activo'] == false ? 'Inactivo' : 'Activo'),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        OutlinedButton.icon(onPressed: _logout, icon: const Icon(Icons.logout), label: const Text('Cerrar sesion')),
+      ],
+    );
+  }
+
+  Widget _creditCard(Credito credito) {
+    return Card(
+      child: ListTile(
+        leading: const CircleAvatar(
+          backgroundColor: Color(0xFFEAF8EF),
+          child: Icon(Icons.payments_outlined, color: AppColors.success),
+        ),
+        title: Text(credito.producto.isEmpty ? 'Credito BanBif' : credito.producto),
+        subtitle: Text('Saldo: ${_format(credito.montoPendiente)} | ${credito.estado}'),
+        trailing: const Icon(Icons.calendar_month_outlined),
+        onTap: () => _showSchedule(credito),
+      ),
+    );
+  }
+
+  Future<void> _showSchedule(Credito credito) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (context) => FutureBuilder<List<Map<String, dynamic>>>(
+        future: viewModel.cargarCronograma(credito.id),
+        builder: (context, snapshot) {
+          final items = snapshot.data ?? [];
+          return SafeArea(
+            child: SizedBox(
+              height: MediaQuery.sizeOf(context).height * 0.72,
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Text('Cronograma ${credito.producto}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+                  ),
+                  if (!snapshot.hasData) const Expanded(child: Center(child: CircularProgressIndicator())) else Expanded(
+                    child: items.isEmpty
+                        ? _state(Icons.event_busy, 'Sin cronograma', 'El cronograma se genera al desembolsar.')
+                        : ListView.separated(
+                            padding: const EdgeInsets.all(16),
+                            itemCount: items.length,
+                            separatorBuilder: (_, __) => const Divider(height: 1),
+                            itemBuilder: (_, index) {
+                              final item = items[index];
+                              return ListTile(
+                                title: Text('Cuota ${item['numero_cuota']} - ${item['estado']}'),
+                                subtitle: Text('Capital ${_formatNum(item['capital'])} | Interes ${_formatNum(item['interes'])}'),
+                                trailing: Text(_formatNum(item['cuota']), style: const TextStyle(fontWeight: FontWeight.w800)),
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _heroCard(String title, String value, String subtitle, IconData icon, VoidCallback onTap) {
+    return Material(
+      color: AppColors.primary,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(18),
+          child: Row(
+            children: [
+              Icon(icon, color: Colors.white, size: 38),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: const TextStyle(color: Colors.white70)),
+                    Text(value, style: const TextStyle(color: Colors.white, fontSize: 23, fontWeight: FontWeight.w900)),
+                    Text(subtitle, style: const TextStyle(color: Colors.white70)),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right, color: Colors.white70),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _infoCard({required String title, required String subtitle, required String value, required IconData icon, required Color color}) {
+    return Card(
+      child: ListTile(
+        leading: CircleAvatar(backgroundColor: color.withOpacity(0.12), child: Icon(icon, color: color)),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
+        subtitle: Text(subtitle),
+        trailing: Text(value, style: const TextStyle(fontWeight: FontWeight.w800)),
+      ),
+    );
+  }
+
+  Widget _movementTile(Movimiento item) {
+    final positive = item.monto >= 0 && item.tipo.toUpperCase() != 'EGRESO';
+    return Card(
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: positive ? const Color(0xFFEAF8EF) : const Color(0xFFFDECEC),
+          child: Icon(positive ? Icons.south_west : Icons.north_east, color: positive ? AppColors.success : AppColors.error),
+        ),
+        title: Text(item.descripcion, maxLines: 1, overflow: TextOverflow.ellipsis),
+        subtitle: Text(DateFormat('dd/MM/yyyy').format(item.fecha)),
+        trailing: Text(_format(item.monto.abs()), style: TextStyle(fontWeight: FontWeight.w800, color: positive ? AppColors.success : AppColors.textPrimary)),
+      ),
+    );
+  }
+
+  Widget _profileTile(IconData icon, String title, String value) {
+    return ListTile(leading: Icon(icon), title: Text(title), subtitle: Text(value));
+  }
+
+  Widget _sectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 12, bottom: 8),
+      child: Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+    );
+  }
+
+  Widget _compactEmpty(String text) {
+    return Card(child: Padding(padding: const EdgeInsets.all(16), child: Text(text, style: const TextStyle(color: AppColors.textSecondary))));
+  }
+
+  Widget _state(IconData icon, String title, String message) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 44, color: AppColors.textSecondary),
+            const SizedBox(height: 10),
+            Text(title, textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.w800)),
+            const SizedBox(height: 4),
+            Text(message, textAlign: TextAlign.center, style: const TextStyle(color: AppColors.textSecondary)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _mask(String value) => value.length <= 6 ? value : '**** ${value.substring(value.length - 4)}';
+  String _format(double value) => _money.format(value);
+  String _formatNum(Object? value) => _format((value as num?)?.toDouble() ?? 0);
+
+  void _logout() {
+    Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (_) => false);
+  }
+}
+
+class _CreditRequestForm extends StatefulWidget {
+  final HomeViewModel viewModel;
+  final VoidCallback onDone;
+
+  const _CreditRequestForm({required this.viewModel, required this.onDone});
+
+  @override
+  State<_CreditRequestForm> createState() => _CreditRequestFormState();
+}
+
+class _CreditRequestFormState extends State<_CreditRequestForm> {
+  final _formKey = GlobalKey<FormState>();
+  final monto = TextEditingController(text: '10000');
+  final plazo = TextEditingController(text: '12');
+  final destino = TextEditingController(text: 'Capital de trabajo');
+  final garantia = TextEditingController(text: 'Inventario del negocio');
+  bool seguro = true;
+  bool sent = false;
+
+  @override
+  void dispose() {
+    monto.dispose();
+    plazo.dispose();
+    destino.dispose();
+    garantia.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final sim = widget.viewModel.ultimaSimulacion;
+    final cuota = sim == null ? null : (sim['cuota'] as num?)?.toDouble();
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        Form(
+          key: _formKey,
+          child: Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  TextFormField(
+                    controller: monto,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    decoration: const InputDecoration(labelText: 'Monto solicitado'),
+                    validator: (v) => (double.tryParse((v ?? '').replaceAll(',', '.')) ?? 0) > 0 ? null : 'Monto invalido',
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: plazo,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(labelText: 'Plazo en meses'),
+                    validator: (v) {
+                      final n = int.tryParse(v ?? '');
+                      return n != null && n > 0 && n <= 60 ? null : 'Plazo invalido';
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: destino,
+                    decoration: const InputDecoration(labelText: 'Destino'),
+                    validator: (v) => (v ?? '').trim().length >= 3 ? null : 'Destino obligatorio',
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: garantia,
+                    decoration: const InputDecoration(labelText: 'Garantia'),
+                    validator: (v) => (v ?? '').trim().isNotEmpty ? null : 'Garantia obligatoria',
+                  ),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    value: seguro,
+                    title: const Text('Seguro desgravamen'),
+                    onChanged: (value) => setState(() => seguro = value),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: _simulate,
+                          icon: const Icon(Icons.calculate_outlined),
+                          label: const Text('Simular'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: FilledButton.icon(
+                          onPressed: _submit,
+                          icon: const Icon(Icons.send_outlined),
+                          label: const Text('Enviar'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        if (cuota != null)
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.payments_outlined, color: AppColors.success),
+              title: const Text('Cuota estimada'),
+              subtitle: const Text('Sistema frances, TEA referencial 24%'),
+              trailing: Text(NumberFormat.currency(locale: 'es_PE', symbol: 'S/ ').format(cuota), style: const TextStyle(fontWeight: FontWeight.w900)),
+            ),
+          ),
+        if (sent)
+          const Card(
+            child: ListTile(
+              leading: Icon(Icons.check_circle, color: AppColors.success),
+              title: Text('Solicitud enviada'),
+              subtitle: Text('El expediente fue registrado en el Core y enviado a cartera/comite.'),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Future<void> _simulate() async {
+    if (!_formKey.currentState!.validate()) return;
+    await widget.viewModel.simularCredito(
+      monto: double.parse(monto.text.replaceAll(',', '.')),
+      plazoMeses: int.parse(plazo.text),
+    );
+    if (mounted && widget.viewModel.error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(widget.viewModel.error!), backgroundColor: AppColors.error));
+    }
+  }
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+    final ok = await widget.viewModel.crearSolicitudCredito(
+      monto: double.parse(monto.text.replaceAll(',', '.')),
+      plazoMeses: int.parse(plazo.text),
+      destino: destino.text.trim(),
+      garantia: garantia.text.trim(),
+      seguroDesgravamen: seguro,
+    );
+    if (!mounted) return;
+    setState(() => sent = ok);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(ok ? 'Solicitud registrada en el Core BanBif' : widget.viewModel.error ?? 'No se pudo enviar'),
+        backgroundColor: ok ? AppColors.success : AppColors.error,
+      ),
+    );
+    if (ok) widget.onDone();
   }
 }

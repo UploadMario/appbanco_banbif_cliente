@@ -6,7 +6,8 @@ class Header extends StatelessWidget {
   final String subtitle;
   final VoidCallback? onLogout;
 
-  const Header({super.key, required this.title, required this.subtitle, this.onLogout});
+  const Header(
+      {super.key, required this.title, required this.subtitle, this.onLogout});
 
   @override
   Widget build(BuildContext context) {
@@ -14,28 +15,53 @@ class Header extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(18, 18, 18, 22),
       decoration: const BoxDecoration(
-        gradient: LinearGradient(colors: [AppColors.primary, AppColors.secondary]),
-        borderRadius: BorderRadius.only(bottomLeft: Radius.circular(24), bottomRight: Radius.circular(24)),
+        gradient: AppColors.brandGradient,
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(24),
+          bottomRight: Radius.circular(24),
+        ),
       ),
       child: SafeArea(
         bottom: false,
         child: Row(
           children: [
             Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(18)),
-              child: const Center(child: Text('Bb', style: TextStyle(fontWeight: FontWeight.w900, color: AppColors.primary, fontSize: 22))),
+              width: 78,
+              height: 48,
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Image.asset('assets/banbif.png', fit: BoxFit.contain),
             ),
             const SizedBox(width: 14),
             Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(title, style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 4),
-                Text(subtitle, style: const TextStyle(color: Colors.white70, fontSize: 13)),
-              ]),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(color: Colors.white70, fontSize: 13),
+                  ),
+                ],
+              ),
             ),
-            if (onLogout != null) IconButton(onPressed: onLogout, icon: const Icon(Icons.logout, color: Colors.white)),
+            if (onLogout != null)
+              IconButton(
+                tooltip: 'Cerrar sesión',
+                onPressed: onLogout,
+                icon: const Icon(Icons.logout, color: Colors.white),
+              ),
           ],
         ),
       ),

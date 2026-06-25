@@ -1,13 +1,15 @@
 import 'package:flutter/foundation.dart';
 
-import '../data/cliente_supabase_service.dart';
+import '../data/cliente_core_service.dart';
 import '../model/cliente_usuario.dart';
 
 class AuthViewModel extends ChangeNotifier {
-  final ClienteSupabaseService _service = ClienteSupabaseService();
+  final ClienteCoreService _service = ClienteCoreService();
 
   bool loading = false;
+  bool checkingCore = false;
   String? error;
+  String? coreStatus;
   ClienteUsuario? usuario;
 
   Future<bool> login(String dni, String password) async {
@@ -17,16 +19,42 @@ class AuthViewModel extends ChangeNotifier {
 
     try {
       usuario = await _service.login(dni.trim(), password.trim());
-      if (usuario == null) {
-        error = 'Credenciales incorrectas o no registradas en Supabase Cliente';
-        return false;
-      }
       return true;
-    } catch (_) {
-      error = 'No se pudo conectar con Supabase Cliente';
+    } catch (e) {
+      error = e.toString();
       return false;
     } finally {
       loading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> logout() => _service.logout();
+
+  Future<void> limpiarSesion() async {
+    await _service.limpiarSesion();
+    usuario = null;
+    error = null;
+    coreStatus = 'Sesion local limpiada.';
+    notifyListeners();
+  }
+
+  Future<void> probarConexionCore() async {
+    checkingCore = true;
+    error = null;
+    coreStatus = null;
+    notifyListeners();
+    try {
+      final data = await _service.probarConexion();
+      final ok = data['database_ok'] == true;
+      coreStatus = ok
+          ? 'Core conectado correctamente.'
+          : 'Core responde, pero alguna BD no esta disponible.';
+    } catch (e) {
+      error = e.toString();
+      coreStatus = 'No se pudo conectar al Core. Verifica backend, IP, firewall o adb reverse.';
+    } finally {
+      checkingCore = false;
       notifyListeners();
     }
   }
