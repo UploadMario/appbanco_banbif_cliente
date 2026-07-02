@@ -55,11 +55,11 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: Container(
                       padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.78),
+                        color: Colors.white.withValues(alpha: 0.78),
                         borderRadius: BorderRadius.circular(28),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.22),
+                            color: Colors.black.withValues(alpha: 0.22),
                             blurRadius: 30,
                             offset: const Offset(0, 18),
                           ),
@@ -114,7 +114,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             Container(
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: AppColors.error.withOpacity(0.08),
+                                color: AppColors.error.withValues(alpha: 0.08),
                                 borderRadius: BorderRadius.circular(14),
                               ),
                               child: Text(
@@ -127,7 +127,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             Container(
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: AppColors.success.withOpacity(0.08),
+                                color: AppColors.success.withValues(alpha: 0.08),
                                 borderRadius: BorderRadius.circular(14),
                               ),
                               child: Text(
@@ -144,13 +144,13 @@ class _LoginScreenState extends State<LoginScreen> {
                                     final ok = await viewModel.login(
                                         dniController.text,
                                         passwordController.text);
-                                    if (ok && mounted) {
-                                      Navigator.pushReplacementNamed(
-                                        context,
-                                        AppRoutes.dashboard,
-                                        arguments: viewModel.usuario,
-                                      );
-                                    }
+                                    if (!context.mounted) return;
+                                    if (!ok) return;
+                                    Navigator.pushReplacementNamed(
+                                      context,
+                                      AppRoutes.dashboard,
+                                      arguments: viewModel.usuario,
+                                    );
                                   },
                             child: Text(viewModel.loading
                                 ? 'Conectando...'

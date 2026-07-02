@@ -331,7 +331,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _infoCard({required String title, required String subtitle, required String value, required IconData icon, required Color color}) {
     return Card(
       child: ListTile(
-        leading: CircleAvatar(backgroundColor: color.withOpacity(0.12), child: Icon(icon, color: color)),
+        leading: CircleAvatar(backgroundColor: color.withValues(alpha: 0.12), child: Icon(icon, color: color)),
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
         subtitle: Text(subtitle),
         trailing: Text(value, style: const TextStyle(fontWeight: FontWeight.w800)),
@@ -502,7 +502,7 @@ class _CreditRequestFormState extends State<_CreditRequestForm> {
             child: ListTile(
               leading: const Icon(Icons.payments_outlined, color: AppColors.success),
               title: const Text('Cuota estimada'),
-              subtitle: const Text('Sistema frances, TEA referencial 24%'),
+              subtitle: Text('Sistema frances, TEA ${seguro ? '40.92%' : '43.92%'}'),
               trailing: Text(NumberFormat.currency(locale: 'es_PE', symbol: 'S/ ').format(cuota), style: const TextStyle(fontWeight: FontWeight.w900)),
             ),
           ),
@@ -523,6 +523,7 @@ class _CreditRequestFormState extends State<_CreditRequestForm> {
     await widget.viewModel.simularCredito(
       monto: double.parse(monto.text.replaceAll(',', '.')),
       plazoMeses: int.parse(plazo.text),
+      tea: seguro ? 0.4092 : 0.4392,
     );
     if (mounted && widget.viewModel.error != null) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(widget.viewModel.error!), backgroundColor: AppColors.error));

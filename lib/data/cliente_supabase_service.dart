@@ -1,57 +1,42 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
-
 import '../model/cliente_usuario.dart';
-import '../model/cuenta.dart';
 import '../model/credito.dart';
+import '../model/cuenta.dart';
 import '../model/movimiento.dart';
+import 'cliente_core_service.dart';
 
+/// Adaptador temporal para imports antiguos.
+///
+/// Las operaciones criticas de la app cliente ya no consultan Supabase directo:
+/// pasan por el Core FastAPI para respetar JWT, RBAC y reglas bancarias.
 class ClienteSupabaseService {
-  final SupabaseClient _client = Supabase.instance.client;
+  final ClienteCoreService _core = ClienteCoreService();
 
   Future<ClienteUsuario?> login(String dni, String password) async {
-    final data = await _client
-        .from('cliente_usuarios')
-        .select()
-        .eq('dni', dni)
-        .eq('password_demo', password)
-        .maybeSingle();
-
-    if (data == null) return null;
-    return ClienteUsuario.fromMap(data);
+    try {
+      return await _core.login(dni, password);
+    } catch (_) {
+      return null;
+    }
   }
 
-  Future<Cuenta?> obtenerCuentaPrincipal(String clienteId) async {
-    final data = await _client
-        .from('cliente_cuentas')
-        .select()
-        .eq('cliente_id', clienteId)
-        .limit(1)
-        .maybeSingle();
+  Future<List<Cuenta>> obtenerCuentas(String clienteId) => _core.obtenerCuentas();
+  Future<List<Credito>> obtenerCreditos(String clienteId) => _core.obtenerCreditos();
+  Future<List<Movimiento>> obtenerMovimientos(String clienteId) => _core.obtenerMovimientos();
 
-    if (data == null) return null;
-    return Cuenta.fromMap(data);
-  }
+  Future<Cuenta> crearCuenta(String clienteId, Cuenta cuenta) => _blocked();
+  Future<void> actualizarCuenta(Cuenta cuenta) => _blocked();
+  Future<void> eliminarCuenta(String id) => _blocked();
+  Future<Credito> crearCredito(String clienteId, Credito credito) => _blocked();
+  Future<void> actualizarCredito(Credito credito) => _blocked();
+  Future<void> eliminarCredito(String id) => _blocked();
+  Future<Movimiento> crearMovimiento(String clienteId, Movimiento movimiento) => _blocked();
+  Future<void> actualizarMovimiento(Movimiento movimiento) => _blocked();
+  Future<void> eliminarMovimiento(String id) => _blocked();
+  Future<ClienteUsuario> actualizarPerfil(ClienteUsuario usuario) => _blocked();
 
-  Future<Credito?> obtenerCreditoActivo(String clienteId) async {
-    final data = await _client
-        .from('cliente_creditos')
-        .select()
-        .eq('cliente_id', clienteId)
-        .limit(1)
-        .maybeSingle();
-
-    if (data == null) return null;
-    return Credito.fromMap(data);
-  }
-
-  Future<List<Movimiento>> obtenerMovimientos(String clienteId) async {
-    final data = await _client
-        .from('cliente_movimientos')
-        .select()
-        .eq('cliente_id', clienteId)
-        .order('fecha', ascending: false)
-        .limit(5);
-
-    return (data as List).map((item) => Movimiento.fromMap(item)).toList();
+  Future<T> _blocked<T>() {
+    return Future<T>.error(
+      UnsupportedError('Operacion critica bloqueada: usa endpoints del Core BanBif.'),
+    );
   }
 }

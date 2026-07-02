@@ -99,7 +99,7 @@ class HomeViewModel extends ChangeNotifier {
   Future<bool> simularCredito({
     required double monto,
     required int plazoMeses,
-    double tea = 0.24,
+    double tea = 0.4092,
   }) async {
     saving = true;
     error = null;

@@ -71,6 +71,7 @@ class ClienteCoreService {
     String? garantia,
     bool seguroDesgravamen = true,
   }) {
+    final tea = seguroDesgravamen ? 0.4092 : 0.4392;
     return _api.post('/clientes/me/solicitudes-credito', body: {
       'monto': monto,
       'plazo_meses': plazoMeses,
@@ -78,7 +79,7 @@ class ClienteCoreService {
       'garantia': garantia,
       'seguro_desgravamen': seguroDesgravamen,
       'producto_codigo': 'MICRO_CAPITAL',
-      'tea': 0.24,
+      'tea': tea,
     });
   }
 
