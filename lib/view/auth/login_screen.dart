@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../../navigation/app_routes.dart';
+import '../../ui/components/app_components.dart';
 import '../../ui/theme/app_colors.dart';
+import '../../ui/theme/app_spacing.dart';
+import '../../ui/theme/app_text_styles.dart';
 import '../../viewmodel/auth_viewmodel.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -29,42 +32,20 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.dark,
       body: AnimatedBuilder(
         animation: viewModel,
         builder: (context, _) {
           return Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  AppColors.primary,
-                  AppColors.secondary,
-                  AppColors.dark,
-                  AppColors.accent,
-                ],
-              ),
-            ),
+            decoration: const BoxDecoration(gradient: AppColors.brandGradient),
             child: SafeArea(
               child: Center(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(24),
+                  padding: const EdgeInsets.all(AppSpacing.screen),
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 420),
-                    child: Container(
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.78),
-                        borderRadius: BorderRadius.circular(28),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.22),
-                            blurRadius: 30,
-                            offset: const Offset(0, 18),
-                          ),
-                        ],
-                      ),
+                    child: AppCard(
+                      padding: const EdgeInsets.all(AppSpacing.card),
+                      color: Colors.white.withValues(alpha: 0.92),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
@@ -76,22 +57,14 @@ class _LoginScreenState extends State<LoginScreen> {
                               fit: BoxFit.contain,
                             ),
                           ),
-                          const SizedBox(height: 26),
+                          const SizedBox(height: AppSpacing.xl),
+                          const Text('Hola de nuevo', style: AppTextStyles.display),
+                          const SizedBox(height: AppSpacing.sm),
                           const Text(
-                            'Hola de nuevo',
-                            style: TextStyle(
-                              color: AppColors.textPrimary,
-                              fontSize: 28,
-                              fontWeight: FontWeight.w800,
-                            ),
+                            'Ingresa a tu banca movil BanBif.',
+                            style: AppTextStyles.body,
                           ),
-                          const SizedBox(height: 6),
-                          const Text(
-                            'Ingresa a tu banca móvil BanBif.',
-                            style: TextStyle(
-                                color: AppColors.textSecondary, fontSize: 15),
-                          ),
-                          const SizedBox(height: 28),
+                          const SizedBox(height: AppSpacing.xxxl),
                           TextField(
                             controller: dniController,
                             keyboardType: TextInputType.number,
@@ -100,50 +73,45 @@ class _LoginScreenState extends State<LoginScreen> {
                               prefixIcon: Icon(Icons.person_outline),
                             ),
                           ),
-                          const SizedBox(height: 14),
+                          const SizedBox(height: AppSpacing.lg),
                           TextField(
                             controller: passwordController,
                             obscureText: true,
                             decoration: const InputDecoration(
-                              labelText: 'Contraseña',
+                              labelText: 'Contrasena',
                               prefixIcon: Icon(Icons.lock_outline),
                             ),
                           ),
-                          const SizedBox(height: 14),
+                          const SizedBox(height: AppSpacing.lg),
                           if (viewModel.error != null)
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: AppColors.error.withValues(alpha: 0.08),
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                              child: Text(
-                                viewModel.error!,
-                                style: const TextStyle(color: AppColors.error),
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                              child: _InlineMessage(
+                                message: viewModel.error!,
+                                color: AppColors.error,
+                                icon: Icons.error_outline,
                               ),
                             ),
-                          if (viewModel.coreStatus != null) ...[
-                            const SizedBox(height: 10),
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: AppColors.success.withValues(alpha: 0.08),
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                              child: Text(
-                                viewModel.coreStatus!,
-                                style: const TextStyle(color: AppColors.success),
+                          if (viewModel.coreStatus != null)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                              child: _InlineMessage(
+                                message: viewModel.coreStatus!,
+                                color: AppColors.success,
+                                icon: Icons.check_circle_outline,
                               ),
                             ),
-                          ],
-                          const SizedBox(height: 14),
-                          ElevatedButton(
+                          PrimaryButton(
+                            label: 'Ingresar',
+                            icon: Icons.login,
+                            loading: viewModel.loading,
                             onPressed: viewModel.loading
                                 ? null
                                 : () async {
                                     final ok = await viewModel.login(
-                                        dniController.text,
-                                        passwordController.text);
+                                      dniController.text,
+                                      passwordController.text,
+                                    );
                                     if (!context.mounted) return;
                                     if (!ok) return;
                                     Navigator.pushReplacementNamed(
@@ -152,15 +120,12 @@ class _LoginScreenState extends State<LoginScreen> {
                                       arguments: viewModel.usuario,
                                     );
                                   },
-                            child: Text(viewModel.loading
-                                ? 'Conectando...'
-                                : 'Ingresar'),
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: AppSpacing.md),
                           Wrap(
                             alignment: WrapAlignment.center,
-                            spacing: 8,
-                            runSpacing: 4,
+                            spacing: AppSpacing.sm,
+                            runSpacing: AppSpacing.xs,
                             children: [
                               TextButton.icon(
                                 onPressed: viewModel.checkingCore
@@ -182,6 +147,12 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                             ],
                           ),
+                          const SizedBox(height: AppSpacing.sm),
+                          const Text(
+                            'Credenciales de prueba:\n74253618 / 123456',
+                            textAlign: TextAlign.center,
+                            style: AppTextStyles.caption,
+                          ),
                         ],
                       ),
                     ),
@@ -191,6 +162,42 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+class _InlineMessage extends StatelessWidget {
+  final String message;
+  final Color color;
+  final IconData icon;
+
+  const _InlineMessage({
+    required this.message,
+    required this.color,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withValues(alpha: 0.22)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 20),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Text(
+              message,
+              style: AppTextStyles.bodyStrong.copyWith(color: color),
+            ),
+          ),
+        ],
       ),
     );
   }

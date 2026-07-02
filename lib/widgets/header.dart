@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import '../ui/theme/app_colors.dart';
+import '../ui/theme/app_radius.dart';
+import '../ui/theme/app_spacing.dart';
+import '../ui/theme/app_text_styles.dart';
 
 class Header extends StatelessWidget {
   final String title;
@@ -13,7 +16,12 @@ class Header extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(18, 18, 18, 22),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.lg,
+        AppSpacing.lg,
+        AppSpacing.xxl,
+      ),
       decoration: const BoxDecoration(
         gradient: AppColors.brandGradient,
         borderRadius: BorderRadius.only(
@@ -28,30 +36,28 @@ class Header extends StatelessWidget {
             Container(
               width: 78,
               height: 48,
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(AppSpacing.sm),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: AppRadius.input,
               ),
               child: Image.asset('assets/banbif.png', fit: BoxFit.contain),
             ),
-            const SizedBox(width: 14),
+            const SizedBox(width: AppSpacing.md),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
+                    style: AppTextStyles.title.copyWith(
                       color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: AppSpacing.xs),
                   Text(
                     subtitle,
-                    style: const TextStyle(color: Colors.white70, fontSize: 13),
+                    style: AppTextStyles.caption.copyWith(color: Colors.white70),
                   ),
                 ],
               ),

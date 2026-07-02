@@ -5,7 +5,11 @@ import '../../model/cliente_usuario.dart';
 import '../../model/credito.dart';
 import '../../model/movimiento.dart';
 import '../../navigation/app_routes.dart';
+import '../../ui/components/app_components.dart';
 import '../../ui/theme/app_colors.dart';
+import '../../ui/theme/app_radius.dart';
+import '../../ui/theme/app_spacing.dart';
+import '../../ui/theme/app_text_styles.dart';
 import '../../viewmodel/home_viewmodel.dart';
 import '../../widgets/header.dart';
 
@@ -60,6 +64,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           ),
           bottomNavigationBar: NavigationBar(
+            backgroundColor: AppColors.surface,
+            indicatorColor: AppColors.brandWarmSoft,
             selectedIndex: currentIndex,
             onDestinationSelected: (index) => setState(() => currentIndex = index),
             destinations: const [
@@ -78,7 +84,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   String get _title => const ['Resumen', 'Productos', 'Solicitud', 'Actividad', 'Perfil'][currentIndex];
 
   Widget _body() {
-    if (viewModel.loading) return const Center(child: CircularProgressIndicator());
+    if (viewModel.loading) return const AppLoading();
     if (viewModel.usuario == null) {
       return _state(Icons.lock_outline, 'Sesion no disponible', 'Vuelve a iniciar sesion para continuar.');
     }
@@ -107,7 +113,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return RefreshIndicator(
       onRefresh: () => viewModel.cargarDatos(viewModel.usuario!),
       child: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         children: [
           _heroCard(
             'Saldo disponible',
@@ -116,7 +122,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             Icons.account_balance_wallet,
             () => setState(() => currentIndex = 1),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
           _heroCard(
             credito?.producto.isNotEmpty == true ? credito!.producto : 'Credito BanBif',
             credito == null ? 'Sin creditos activos' : _format(credito.montoPendiente),
@@ -124,11 +130,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
             Icons.credit_score,
             () => setState(() => currentIndex = credito == null ? 2 : 1),
           ),
-          const SizedBox(height: 18),
-          _sectionTitle('Ultimos movimientos'),
+          const SizedBox(height: AppSpacing.xl),
+          const AppSectionTitle(
+            title: 'Ultimos movimientos',
+            subtitle: 'Actividad reciente de tus productos',
+          ),
           ...viewModel.movimientos.take(4).map(_movementTile),
           if (viewModel.movimientos.isEmpty)
-            _state(Icons.receipt_long_outlined, 'Sin movimientos', 'Cuando haya desembolsos o pagos se mostraran aqui.'),
+            const AppEmptyState(
+              icon: Icons.receipt_long_outlined,
+              title: 'Sin movimientos',
+              message: 'Cuando haya desembolsos o pagos se mostraran aqui.',
+            ),
         ],
       ),
     );
@@ -138,9 +151,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return RefreshIndicator(
       onRefresh: () => viewModel.cargarDatos(viewModel.usuario!),
       child: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         children: [
-          _sectionTitle('Cuentas'),
+          const AppSectionTitle(title: 'Cuentas'),
           if (viewModel.cuentas.isEmpty)
             _compactEmpty('No hay cuentas registradas')
           else
@@ -151,7 +164,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   icon: Icons.account_balance,
                   color: AppColors.primary,
                 )),
-          _sectionTitle('Tarjetas'),
+          const AppSectionTitle(title: 'Tarjetas'),
           if (viewModel.tarjetas.isEmpty)
             _compactEmpty('No hay tarjetas registradas')
           else
@@ -162,7 +175,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   icon: Icons.credit_card,
                   color: AppColors.secondary,
                 )),
-          _sectionTitle('Creditos'),
+          const AppSectionTitle(title: 'Creditos'),
           if (viewModel.creditos.isEmpty)
             _compactEmpty('No hay creditos desembolsados')
           else
@@ -180,14 +193,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return RefreshIndicator(
       onRefresh: () => viewModel.cargarDatos(viewModel.usuario!),
       child: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         children: [
-          _sectionTitle('Movimientos'),
+          const AppSectionTitle(title: 'Movimientos'),
           if (viewModel.movimientos.isEmpty)
             _compactEmpty('No hay movimientos')
           else
             ...viewModel.movimientos.map(_movementTile),
-          _sectionTitle('Notificaciones'),
+          const AppSectionTitle(title: 'Notificaciones'),
           if (viewModel.notificaciones.isEmpty)
             _compactEmpty('No hay notificaciones')
           else
@@ -210,17 +223,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final perfil = viewModel.perfil ?? {};
     final usuario = viewModel.usuario!;
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       children: [
         const CircleAvatar(
           radius: 42,
           backgroundColor: Color(0xFFE5F4FE),
           child: Icon(Icons.person, color: AppColors.primary, size: 44),
         ),
-        const SizedBox(height: 14),
-        Text(usuario.nombre, textAlign: TextAlign.center, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
-        Text(usuario.correo, textAlign: TextAlign.center, style: const TextStyle(color: AppColors.textSecondary)),
-        const SizedBox(height: 18),
+        const SizedBox(height: AppSpacing.lg),
+        Text(usuario.nombre, textAlign: TextAlign.center, style: AppTextStyles.display),
+        Text(usuario.correo, textAlign: TextAlign.center, style: AppTextStyles.body),
+        const SizedBox(height: AppSpacing.xl),
         Card(
           child: Column(
             children: [
@@ -242,7 +255,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Card(
       child: ListTile(
         leading: const CircleAvatar(
-          backgroundColor: Color(0xFFEAF8EF),
+          backgroundColor: AppColors.brandWarmSoft,
           child: Icon(Icons.payments_outlined, color: AppColors.success),
         ),
         title: Text(credito.producto.isEmpty ? 'Credito BanBif' : credito.producto),
@@ -298,30 +311,49 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _heroCard(String title, String value, String subtitle, IconData icon, VoidCallback onTap) {
-    return Material(
-      color: AppColors.primary,
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(18),
-          child: Row(
-            children: [
-              Icon(icon, color: Colors.white, size: 38),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(title, style: const TextStyle(color: Colors.white70)),
-                    Text(value, style: const TextStyle(color: Colors.white, fontSize: 23, fontWeight: FontWeight.w900)),
-                    Text(subtitle, style: const TextStyle(color: Colors.white70)),
-                  ],
+    return Container(
+      decoration: BoxDecoration(
+        gradient: AppColors.brandGradient,
+        borderRadius: AppRadius.card,
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.brandMagenta.withValues(alpha: 0.18),
+            blurRadius: 28,
+            offset: const Offset(0, 14),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: AppRadius.card,
+        child: InkWell(
+          borderRadius: AppRadius.card,
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.xl),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 24,
+                  backgroundColor: Colors.white.withValues(alpha: 0.18),
+                  child: Icon(icon, color: Colors.white, size: 28),
                 ),
-              ),
-              const Icon(Icons.chevron_right, color: Colors.white70),
-            ],
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(title, style: AppTextStyles.caption.copyWith(color: Colors.white70)),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(value, style: AppTextStyles.display.copyWith(color: Colors.white)),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(subtitle, style: AppTextStyles.caption.copyWith(color: Colors.white70)),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.chevron_right, color: Colors.white70),
+              ],
+            ),
           ),
         ),
       ),
@@ -358,15 +390,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return ListTile(leading: Icon(icon), title: Text(title), subtitle: Text(value));
   }
 
-  Widget _sectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 12, bottom: 8),
-      child: Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
-    );
-  }
-
   Widget _compactEmpty(String text) {
-    return Card(child: Padding(padding: const EdgeInsets.all(16), child: Text(text, style: const TextStyle(color: AppColors.textSecondary))));
+    return AppCard(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: Text(text, style: AppTextStyles.body),
+    );
   }
 
   Widget _state(IconData icon, String title, String message) {
