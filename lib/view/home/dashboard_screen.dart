@@ -200,6 +200,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
             _compactEmpty('No hay movimientos')
           else
             ...viewModel.movimientos.map(_movementTile),
+          const AppSectionTitle(
+            title: 'Solicitudes',
+            subtitle: 'Estado de tus expedientes de credito',
+          ),
+          if (viewModel.solicitudes.isEmpty)
+            _compactEmpty('No hay solicitudes registradas')
+          else
+            ...viewModel.solicitudes.map(_solicitudTile),
           const AppSectionTitle(title: 'Notificaciones'),
           if (viewModel.notificaciones.isEmpty)
             _compactEmpty('No hay notificaciones')
@@ -386,6 +394,44 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  Widget _solicitudTile(Map<String, dynamic> item) {
+    final estado = item['estado']?.toString() ?? 'ENVIADO';
+    final Object? monto = item['monto_aprobado'] ?? item['monto'];
+    final motivo = item['motivo_rechazo'] ?? item['condicion'];
+    return AppCard(
+      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  item['expediente']?.toString() ?? 'Solicitud BanBif',
+                  style: AppTextStyles.bodyStrong,
+                ),
+              ),
+              AppStatusChip(
+                label: estado,
+                color: _statusColor(estado),
+                icon: _statusIcon(estado),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            '${_formatNum(monto)} | ${item['plazo_meses'] ?? 12} meses | ${item['destino'] ?? 'Capital de trabajo'}',
+            style: AppTextStyles.body,
+          ),
+          if (motivo != null) ...[
+            const SizedBox(height: AppSpacing.xs),
+            Text(motivo.toString(), style: AppTextStyles.caption),
+          ],
+        ],
+      ),
+    );
+  }
+
   Widget _profileTile(IconData icon, String title, String value) {
     return ListTile(leading: Icon(icon), title: Text(title), subtitle: Text(value));
   }
@@ -419,6 +465,37 @@ class _DashboardScreenState extends State<DashboardScreen> {
   String _mask(String value) => value.length <= 6 ? value : '**** ${value.substring(value.length - 4)}';
   String _format(double value) => _money.format(value);
   String _formatNum(Object? value) => _format((value as num?)?.toDouble() ?? 0);
+  Color _statusColor(String estado) {
+    switch (estado.toUpperCase()) {
+      case 'APROBADO':
+      case 'DESEMBOLSADO':
+      case 'ACTIVO':
+        return AppColors.success;
+      case 'CONDICIONADO':
+      case 'EN_EVALUACION':
+      case 'RECIBIDO_COMITE':
+        return AppColors.warning;
+      case 'RECHAZADO':
+        return AppColors.error;
+      default:
+        return AppColors.primary;
+    }
+  }
+
+  IconData _statusIcon(String estado) {
+    switch (estado.toUpperCase()) {
+      case 'DESEMBOLSADO':
+        return Icons.payments_outlined;
+      case 'APROBADO':
+        return Icons.check_circle_outline;
+      case 'RECHAZADO':
+        return Icons.cancel_outlined;
+      case 'CONDICIONADO':
+        return Icons.rule_outlined;
+      default:
+        return Icons.schedule_outlined;
+    }
+  }
 
   void _logout() {
     Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (_) => false);

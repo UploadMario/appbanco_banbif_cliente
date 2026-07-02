@@ -15,6 +15,7 @@ class HomeViewModel extends ChangeNotifier {
   List<Movimiento> movimientos = [];
   List<Map<String, dynamic>> tarjetas = [];
   List<Map<String, dynamic>> notificaciones = [];
+  List<Map<String, dynamic>> solicitudes = [];
   Map<String, dynamic>? perfil;
   Map<String, dynamic>? ultimaSimulacion;
   bool loading = false;
@@ -134,6 +135,7 @@ class HomeViewModel extends ChangeNotifier {
       _service.obtenerCreditos(),
       _service.obtenerMovimientos(),
       _service.obtenerNotificaciones(),
+      _service.obtenerSolicitudes(),
     ]);
     perfil = resultados[0] as Map<String, dynamic>;
     cuentas = resultados[1] as List<Cuenta>;
@@ -141,5 +143,6 @@ class HomeViewModel extends ChangeNotifier {
     creditos = resultados[3] as List<Credito>;
     movimientos = resultados[4] as List<Movimiento>;
     notificaciones = resultados[5] as List<Map<String, dynamic>>;
+    solicitudes = resultados[6] as List<Map<String, dynamic>>;
   }
 }

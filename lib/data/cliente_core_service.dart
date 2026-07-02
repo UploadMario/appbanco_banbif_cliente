@@ -55,6 +55,11 @@ class ClienteCoreService {
     return _items(response);
   }
 
+  Future<List<Map<String, dynamic>>> obtenerSolicitudes() async {
+    final response = await _api.get('/clientes/me/solicitudes-credito');
+    return _items(response);
+  }
+
   Future<List<Map<String, dynamic>>> obtenerCronograma(String creditoId) async {
     final response = await _api.get('/clientes/me/creditos/$creditoId/cronograma');
     return _items(response);
