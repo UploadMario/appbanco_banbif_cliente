@@ -65,6 +65,18 @@ class ClienteCoreService {
     return _items(response);
   }
 
+  Future<Map<String, dynamic>> pagarCredito({
+    required String creditoId,
+    required double monto,
+    int? numeroCuota,
+  }) {
+    return _api.post('/clientes/me/pagos-credito', body: {
+      'credito_id': creditoId,
+      'monto': monto,
+      if (numeroCuota != null) 'numero_cuota': numeroCuota,
+    });
+  }
+
   Future<Map<String, dynamic>> simularCredito(double monto, int plazoMeses, double tea) {
     return _api.post('/creditos/simular', body: {'monto': monto, 'plazo_meses': plazoMeses, 'tea': tea});
   }

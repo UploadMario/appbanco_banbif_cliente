@@ -21,7 +21,7 @@ class AuthViewModel extends ChangeNotifier {
       usuario = await _service.login(dni.trim(), password.trim());
       return true;
     } catch (e) {
-      error = e.toString();
+      error = 'No se pudo iniciar sesion. Verifica tus credenciales.';
       return false;
     } finally {
       loading = false;
@@ -35,7 +35,7 @@ class AuthViewModel extends ChangeNotifier {
     await _service.limpiarSesion();
     usuario = null;
     error = null;
-    coreStatus = 'Sesion local limpiada.';
+    coreStatus = 'Sesion limpiada correctamente.';
     notifyListeners();
   }
 
@@ -48,11 +48,11 @@ class AuthViewModel extends ChangeNotifier {
       final data = await _service.probarConexion();
       final ok = data['database_ok'] == true;
       coreStatus = ok
-          ? 'Core conectado correctamente.'
-          : 'Core responde, pero alguna BD no esta disponible.';
+          ? 'Servicio disponible.'
+          : 'El servicio esta disponible, pero algunos datos pueden tardar en cargar.';
     } catch (e) {
-      error = e.toString();
-      coreStatus = 'No se pudo conectar al Core. Verifica backend, IP, firewall o adb reverse.';
+      error = 'No pudimos conectar con el servicio. Intenta nuevamente.';
+      coreStatus = null;
     } finally {
       checkingCore = false;
       notifyListeners();

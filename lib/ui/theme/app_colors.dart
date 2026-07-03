@@ -6,10 +6,10 @@ class AppColors {
   static const Color primaryLight = Color(0xFF1E9BFF);
   static const Color secondary = Color(0xFF003B7A);
   static const Color accent = Color(0xFF00AEEF);
-  static const Color brandRed = Color(0xFFE30613);
-  static const Color brandOrange = Color(0xFFFF7A1A);
-  static const Color brandMagenta = Color(0xFFC2185B);
-  static const Color brandWarmSoft = Color(0xFFFFEEF3);
+  static const Color brandRed = primaryDark;
+  static const Color brandOrange = primary;
+  static const Color brandMagenta = accent;
+  static const Color brandWarmSoft = Color(0xFFEAF7FF);
   static const Color accentSoft = Color(0xFFDFF4FF);
   static const Color highlight = Color(0xFF00AEEF);
   static const Color dark = Color(0xFF151924);
@@ -27,7 +27,7 @@ class AppColors {
   static const LinearGradient brandGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [brandRed, brandOrange, brandMagenta],
+    colors: [primaryDark, primary, accent],
   );
 
   static const LinearGradient bankingGradient = LinearGradient(

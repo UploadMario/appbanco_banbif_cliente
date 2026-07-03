@@ -19,7 +19,7 @@ class ApiException implements Exception {
 
 class ApiClient {
   static const _storage = FlutterSecureStorage();
-  static const Duration requestTimeout = Duration(seconds: 8);
+  static const Duration requestTimeout = Duration(seconds: 30);
   final http.Client _http;
 
   ApiClient({http.Client? httpClient}) : _http = httpClient ?? http.Client();
@@ -47,20 +47,20 @@ class ApiClient {
         throw ApiException(response.statusCode, decoded['detail']?.toString() ?? 'Rol no autorizado.');
       }
       if (response.statusCode >= 500) {
-        throw ApiException(response.statusCode, decoded['detail']?.toString() ?? 'Error interno del Core.');
+        throw const ApiException(500, 'No pudimos completar la operacion. Intenta nuevamente.');
       }
       if (response.statusCode < 200 || response.statusCode >= 300) {
-        throw ApiException(response.statusCode, decoded['detail']?.toString() ?? 'Error del Core.');
+        throw ApiException(response.statusCode, decoded['detail']?.toString() ?? 'No pudimos completar la operacion.');
       }
       return decoded;
     } on TimeoutException {
-      throw const ApiException(408, 'Tiempo agotado conectando al Core. Revisa IP/firewall.');
+      throw const ApiException(408, 'La conexion esta tardando mas de lo esperado. Intenta nuevamente.');
     } on SocketException {
-      throw const ApiException(0, 'No hay conexion con el servidor. Verifica IP, red o adb reverse.');
+      throw const ApiException(0, 'No pudimos conectar con el servicio. Revisa tu conexion e intenta nuevamente.');
     } on http.ClientException {
-      throw const ApiException(0, 'No hay conexion con el servidor. Verifica IP, red o adb reverse.');
+      throw const ApiException(0, 'No pudimos conectar con el servicio. Revisa tu conexion e intenta nuevamente.');
     } on FormatException {
-      throw const ApiException(0, 'Respuesta invalida del Core.');
+      throw const ApiException(0, 'Recibimos una respuesta inesperada. Intenta nuevamente.');
     }
   }
 

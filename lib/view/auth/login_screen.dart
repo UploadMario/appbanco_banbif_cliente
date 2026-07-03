@@ -16,10 +16,11 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController dniController =
-      TextEditingController(text: '74253618');
+      TextEditingController(text: '40118120');
   final TextEditingController passwordController =
-      TextEditingController(text: '123456');
+      TextEditingController(text: 'Cliente#8120Demo');
   final AuthViewModel viewModel = AuthViewModel();
+  bool obscurePassword = true;
 
   @override
   void dispose() {
@@ -36,7 +37,7 @@ class _LoginScreenState extends State<LoginScreen> {
         animation: viewModel,
         builder: (context, _) {
           return Container(
-            decoration: const BoxDecoration(gradient: AppColors.brandGradient),
+            color: AppColors.background,
             child: SafeArea(
               child: Center(
                 child: SingleChildScrollView(
@@ -44,24 +45,72 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 420),
                     child: AppCard(
-                      padding: const EdgeInsets.all(AppSpacing.card),
-                      color: Colors.white.withValues(alpha: 0.92),
+                      padding: EdgeInsets.zero,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Align(
-                            alignment: Alignment.centerLeft,
-                            child: Image.asset(
-                              'assets/banbif.png',
-                              height: 56,
-                              fit: BoxFit.contain,
+                          Container(
+                            padding: const EdgeInsets.all(AppSpacing.xl),
+                            decoration: const BoxDecoration(
+                              gradient: AppColors.bankingGradient,
+                              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Image.asset(
+                                  'assets/banbif.png',
+                                  height: 58,
+                                  fit: BoxFit.contain,
+                                ),
+                                const SizedBox(height: AppSpacing.lg),
+                                Text(
+                                  'Banca movil',
+                                  style: AppTextStyles.display.copyWith(color: Colors.white),
+                                ),
+                                const SizedBox(height: AppSpacing.xs),
+                                Text(
+                                  'Accede a tus productos financieros',
+                                  style: AppTextStyles.body.copyWith(color: Colors.white.withValues(alpha: 0.92)),
+                                ),
+                              ],
                             ),
                           ),
-                          const SizedBox(height: AppSpacing.xl),
-                          const Text('Hola de nuevo', style: AppTextStyles.display),
+                          Padding(
+                            padding: const EdgeInsets.all(AppSpacing.card),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.md,
+                              vertical: AppSpacing.sm,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.accentSoft,
+                              borderRadius: BorderRadius.circular(999),
+                              border: Border.all(color: AppColors.border),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.verified_user_outlined, size: 18, color: AppColors.primary),
+                                const SizedBox(width: AppSpacing.sm),
+                                Text(
+                                  'Banca movil cliente',
+                                  style: AppTextStyles.caption.copyWith(
+                                    color: AppColors.primaryDark,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.lg),
+                          const Text('Hola de nuevo', style: AppTextStyles.title),
                           const SizedBox(height: AppSpacing.sm),
                           const Text(
-                            'Ingresa a tu banca movil BanBif.',
+                            'Consulta tus creditos, cronograma y movimientos con seguridad.',
                             style: AppTextStyles.body,
                           ),
                           const SizedBox(height: AppSpacing.xxxl),
@@ -76,10 +125,14 @@ class _LoginScreenState extends State<LoginScreen> {
                           const SizedBox(height: AppSpacing.lg),
                           TextField(
                             controller: passwordController,
-                            obscureText: true,
-                            decoration: const InputDecoration(
+                            obscureText: obscurePassword,
+                            decoration: InputDecoration(
                               labelText: 'Contrasena',
-                              prefixIcon: Icon(Icons.lock_outline),
+                              prefixIcon: const Icon(Icons.lock_outline),
+                              suffixIcon: IconButton(
+                                onPressed: () => setState(() => obscurePassword = !obscurePassword),
+                                icon: Icon(obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined),
+                              ),
                             ),
                           ),
                           const SizedBox(height: AppSpacing.lg),
@@ -138,7 +191,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                         child: CircularProgressIndicator(strokeWidth: 2),
                                       )
                                     : const Icon(Icons.cloud_done_outlined),
-                                label: const Text('Probar conexion Core'),
+                                label: const Text('Probar conexion'),
                               ),
                               TextButton.icon(
                                 onPressed: viewModel.limpiarSesion,
@@ -148,10 +201,20 @@ class _LoginScreenState extends State<LoginScreen> {
                             ],
                           ),
                           const SizedBox(height: AppSpacing.sm),
-                          const Text(
-                            'Credenciales de prueba:\n74253618 / 123456',
-                            textAlign: TextAlign.center,
-                            style: AppTextStyles.caption,
+                          Container(
+                            padding: const EdgeInsets.all(AppSpacing.md),
+                            decoration: BoxDecoration(
+                              color: AppColors.surfaceMuted,
+                              borderRadius: BorderRadius.circular(18),
+                            ),
+                            child: const Text(
+                              'Acceso de evaluacion\n40118120 / Cliente#8120Demo',
+                              textAlign: TextAlign.center,
+                              style: AppTextStyles.caption,
+                            ),
+                          ),
+                              ],
+                            ),
                           ),
                         ],
                       ),

@@ -28,7 +28,7 @@ class AppTheme {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.brandMagenta,
+          backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
           minimumSize: const Size(double.infinity, 56),
           elevation: 0,
@@ -43,11 +43,11 @@ class AppTheme {
         labelStyle: const TextStyle(color: AppColors.textSecondary),
         enabledBorder: OutlineInputBorder(
           borderRadius: AppRadius.input,
-          borderSide: const BorderSide(color: Color(0xFFE4EAF2)),
+          borderSide: const BorderSide(color: AppColors.border),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: AppRadius.input,
-          borderSide: const BorderSide(color: AppColors.brandMagenta, width: 1.4),
+          borderSide: const BorderSide(color: AppColors.accent, width: 1.4),
         ),
         border: OutlineInputBorder(borderRadius: AppRadius.input),
       ),

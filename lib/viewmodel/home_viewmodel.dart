@@ -34,7 +34,7 @@ class HomeViewModel extends ChangeNotifier {
     try {
       await _reloadLists();
     } catch (e) {
-      error = 'No se pudieron cargar los datos desde el Core BanBif: $e';
+      error = 'No pudimos cargar tu informacion. Intenta nuevamente.';
     } finally {
       loading = false;
       notifyListeners();
@@ -42,13 +42,13 @@ class HomeViewModel extends ChangeNotifier {
   }
 
   Future<bool> guardarCuenta(Cuenta cuenta, {required bool nueva}) =>
-      _blockedMutation('Las cuentas se administran desde el Core.');
+      _blockedMutation('Esta operacion no esta disponible desde la app.');
 
   Future<bool> eliminarCuenta(String id) =>
       _blockedMutation('Las cuentas no se eliminan desde la app cliente.');
 
   Future<bool> guardarCredito(Credito credito, {required bool nuevo}) =>
-      _blockedMutation('Los creditos nacen por solicitud y desembolso del Core.');
+      _blockedMutation('Los creditos se activan despues de la evaluacion y desembolso.');
 
   Future<bool> eliminarCredito(String id) =>
       _blockedMutation('Los creditos no se eliminan desde la app cliente.');
@@ -57,7 +57,7 @@ class HomeViewModel extends ChangeNotifier {
     Movimiento movimiento, {
     required bool nuevo,
   }) =>
-      _blockedMutation('Los movimientos los registra el Core.');
+      _blockedMutation('Esta operacion no esta disponible desde la app.');
 
   Future<bool> eliminarMovimiento(String id) =>
       _blockedMutation('Los movimientos no se eliminan desde la app cliente.');
@@ -89,7 +89,7 @@ class HomeViewModel extends ChangeNotifier {
       await _reloadLists();
       return true;
     } catch (e) {
-      error = 'No se pudo registrar la solicitud en el Core BanBif: $e';
+      error = 'No pudimos enviar tu solicitud. Intenta nuevamente.';
       return false;
     } finally {
       saving = false;
@@ -119,6 +119,27 @@ class HomeViewModel extends ChangeNotifier {
 
   Future<List<Map<String, dynamic>>> cargarCronograma(String creditoId) {
     return _service.obtenerCronograma(creditoId);
+  }
+
+  Future<bool> pagarCredito({
+    required String creditoId,
+    required double monto,
+    int? numeroCuota,
+  }) async {
+    saving = true;
+    error = null;
+    notifyListeners();
+    try {
+      await _service.pagarCredito(creditoId: creditoId, monto: monto, numeroCuota: numeroCuota);
+      await _reloadLists();
+      return true;
+    } catch (e) {
+      error = 'No pudimos registrar el pago. Intenta nuevamente.';
+      return false;
+    } finally {
+      saving = false;
+      notifyListeners();
+    }
   }
 
   Future<bool> _blockedMutation(String message) async {

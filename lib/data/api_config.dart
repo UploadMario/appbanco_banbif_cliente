@@ -1,7 +1,7 @@
 class ApiConfig {
   static const String baseUrl = String.fromEnvironment(
     'CORE_API_BASE_URL',
-    defaultValue: 'http://10.0.2.2:8000/api/v1',
+    defaultValue: 'https://appbanco-banbif-core.onrender.com/api/v1',
   );
 
   static String get normalizedBaseUrl => baseUrl.endsWith('/')

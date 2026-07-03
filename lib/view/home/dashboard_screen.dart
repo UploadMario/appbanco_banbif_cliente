@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../../model/cliente_usuario.dart';
 import '../../model/credito.dart';
+import '../../model/cuenta.dart';
 import '../../model/movimiento.dart';
 import '../../navigation/app_routes.dart';
 import '../../ui/components/app_components.dart';
@@ -115,21 +116,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: ListView(
         padding: const EdgeInsets.all(AppSpacing.lg),
         children: [
-          _heroCard(
-            'Saldo disponible',
-            cuenta == null ? 'Sin cuentas' : _format(cuenta.saldo),
-            cuenta?.numeroCuenta ?? 'Tus productos apareceran aqui',
-            Icons.account_balance_wallet,
-            () => setState(() => currentIndex = 1),
+          _walletCard(cuenta, credito),
+          const SizedBox(height: AppSpacing.lg),
+          _shortcutGrid(),
+          const SizedBox(height: AppSpacing.xl),
+          const AppSectionTitle(
+            title: 'Tus productos',
+            subtitle: 'Resumen de tus productos bancarios',
           ),
-          const SizedBox(height: AppSpacing.md),
-          _heroCard(
-            credito?.producto.isNotEmpty == true ? credito!.producto : 'Credito BanBif',
-            credito == null ? 'Sin creditos activos' : _format(credito.montoPendiente),
-            credito == null ? 'Solicita capital de trabajo en minutos' : 'Estado: ${credito.estado}',
-            Icons.credit_score,
-            () => setState(() => currentIndex = credito == null ? 2 : 1),
-          ),
+          if (credito == null)
+            _compactEmpty('Aun no tienes creditos activos. Solicita capital de trabajo desde la app.')
+          else
+            _creditCard(credito),
           const SizedBox(height: AppSpacing.xl),
           const AppSectionTitle(
             title: 'Ultimos movimientos',
@@ -142,6 +140,136 @@ class _DashboardScreenState extends State<DashboardScreen> {
               title: 'Sin movimientos',
               message: 'Cuando haya desembolsos o pagos se mostraran aqui.',
             ),
+        ],
+      ),
+    );
+  }
+
+  Widget _walletCard(Cuenta? cuenta, Credito? credito) {
+    final saldo = cuenta == null ? 'S/ 0.00' : _format(cuenta.saldo);
+    final creditoLabel = credito == null ? 'Sin credito activo' : 'Credito: ${_format(credito.montoPendiente)}';
+    return Container(
+      decoration: BoxDecoration(
+        gradient: AppColors.brandGradient,
+        borderRadius: AppRadius.card,
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.24),
+            blurRadius: 34,
+            offset: const Offset(0, 18),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.16),
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: const Icon(Icons.account_balance_wallet_outlined, color: Colors.white),
+                ),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.16),
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
+                  ),
+                  child: Text(
+                    cuenta?.moneda ?? 'PEN',
+                    style: AppTextStyles.caption.copyWith(color: Colors.white, fontWeight: FontWeight.w900),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.xl),
+            Text('Balance disponible', style: AppTextStyles.caption.copyWith(color: Colors.white.withValues(alpha: 0.92))),
+            const SizedBox(height: AppSpacing.xs),
+            Text(saldo, style: AppTextStyles.display.copyWith(color: Colors.white, fontSize: 34)),
+            const SizedBox(height: AppSpacing.md),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    cuenta == null ? 'Tus productos apareceran aqui' : '${cuenta.tipo} ${_mask(cuenta.numeroCuenta)}',
+                    style: AppTextStyles.caption.copyWith(color: Colors.white.withValues(alpha: 0.92)),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Flexible(
+                  child: Text(
+                    creditoLabel,
+                    textAlign: TextAlign.end,
+                    style: AppTextStyles.caption.copyWith(color: Colors.white),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _shortcutGrid() {
+    final items = [
+      _Shortcut('Solicitar', Icons.add_card_outlined, () => setState(() => currentIndex = 2)),
+      _Shortcut('Creditos', Icons.credit_score_outlined, () => setState(() => currentIndex = 1)),
+      _Shortcut('Cronograma', Icons.event_note_outlined, () {
+        final credito = viewModel.creditoPrincipal;
+        if (credito == null) {
+          _toast('No tienes creditos desembolsados todavia.', AppColors.warning);
+          return;
+        }
+        _showSchedule(credito);
+      }),
+      _Shortcut('Movimientos', Icons.receipt_long_outlined, () => setState(() => currentIndex = 3)),
+    ];
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final columns = constraints.maxWidth < 360 ? 2 : 4;
+        return GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: items.length,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: columns,
+            mainAxisSpacing: AppSpacing.sm,
+            crossAxisSpacing: AppSpacing.sm,
+            childAspectRatio: columns == 2 ? 1.55 : 0.86,
+          ),
+          itemBuilder: (context, index) => _shortcutCard(items[index]),
+        );
+      },
+    );
+  }
+
+  Widget _shortcutCard(_Shortcut item) {
+    return AppCard(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs, vertical: AppSpacing.md),
+      onTap: item.onTap,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: AppColors.brandWarmSoft,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(item.icon, color: AppColors.primary),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(item.label, textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTextStyles.caption),
         ],
       ),
     );
@@ -235,7 +363,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       children: [
         const CircleAvatar(
           radius: 42,
-          backgroundColor: Color(0xFFE5F4FE),
+          backgroundColor: AppColors.accentSoft,
           child: Icon(Icons.person, color: AppColors.primary, size: 44),
         ),
         const SizedBox(height: AppSpacing.lg),
@@ -260,16 +388,48 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _creditCard(Credito credito) {
-    return Card(
-      child: ListTile(
-        leading: const CircleAvatar(
-          backgroundColor: AppColors.brandWarmSoft,
-          child: Icon(Icons.payments_outlined, color: AppColors.success),
-        ),
-        title: Text(credito.producto.isEmpty ? 'Credito BanBif' : credito.producto),
-        subtitle: Text('Saldo: ${_format(credito.montoPendiente)} | ${credito.estado}'),
-        trailing: const Icon(Icons.calendar_month_outlined),
-        onTap: () => _showSchedule(credito),
+    return AppCard(
+      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+      onTap: () => _showSchedule(credito),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.accentSoft,
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: const Icon(Icons.payments_outlined, color: AppColors.primary),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(credito.producto.isEmpty ? 'Credito BanBif' : credito.producto, style: AppTextStyles.bodyStrong),
+                    const SizedBox(height: 2),
+                    const Text('Saldo pendiente', style: AppTextStyles.caption),
+                  ],
+                ),
+              ),
+              AppStatusChip(label: credito.estado, color: _statusColor(credito.estado), icon: _statusIcon(credito.estado)),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          Text(_format(credito.montoPendiente), style: AppTextStyles.display),
+          const SizedBox(height: AppSpacing.sm),
+          const Row(
+            children: [
+              Icon(Icons.calendar_month_outlined, size: 18, color: AppColors.textSecondary),
+              SizedBox(width: AppSpacing.xs),
+              Expanded(child: Text('Ver cronograma y pagar cuota')),
+              Icon(Icons.chevron_right, color: AppColors.textSecondary),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -283,6 +443,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         future: viewModel.cargarCronograma(credito.id),
         builder: (context, snapshot) {
           final items = snapshot.data ?? [];
+          final pending = _firstPending(items);
           return SafeArea(
             child: SizedBox(
               height: MediaQuery.sizeOf(context).height * 0.72,
@@ -292,6 +453,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     padding: const EdgeInsets.all(16),
                     child: Text('Cronograma ${credito.producto}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
                   ),
+                  if (pending != null)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: FilledButton.icon(
+                        onPressed: viewModel.saving ? null : () => _payInstallment(credito, pending),
+                        icon: const Icon(Icons.check_circle_outline),
+                        label: Text('Pagar cuota ${pending['numero_cuota']} (${_formatNum(pending['cuota'])})'),
+                      ),
+                    ),
                   if (!snapshot.hasData) const Expanded(child: Center(child: CircularProgressIndicator())) else Expanded(
                     child: items.isEmpty
                         ? _state(Icons.event_busy, 'Sin cronograma', 'El cronograma se genera al desembolsar.')
@@ -302,7 +472,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             itemBuilder: (_, index) {
                               final item = items[index];
                               return ListTile(
-                                title: Text('Cuota ${item['numero_cuota']} - ${item['estado']}'),
+                                title: Text('Cuota ${item['numero_cuota']} - ${_formatEstado(item['estado']?.toString() ?? '')}'),
                                 subtitle: Text('Capital ${_formatNum(item['capital'])} | Interes ${_formatNum(item['interes'])}'),
                                 trailing: Text(_formatNum(item['cuota']), style: const TextStyle(fontWeight: FontWeight.w800)),
                               );
@@ -318,54 +488,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _heroCard(String title, String value, String subtitle, IconData icon, VoidCallback onTap) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: AppColors.brandGradient,
-        borderRadius: AppRadius.card,
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.brandMagenta.withValues(alpha: 0.18),
-            blurRadius: 28,
-            offset: const Offset(0, 14),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: AppRadius.card,
-        child: InkWell(
-          borderRadius: AppRadius.card,
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.xl),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 24,
-                  backgroundColor: Colors.white.withValues(alpha: 0.18),
-                  child: Icon(icon, color: Colors.white, size: 28),
-                ),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(title, style: AppTextStyles.caption.copyWith(color: Colors.white70)),
-                      const SizedBox(height: AppSpacing.xs),
-                      Text(value, style: AppTextStyles.display.copyWith(color: Colors.white)),
-                      const SizedBox(height: AppSpacing.xs),
-                      Text(subtitle, style: AppTextStyles.caption.copyWith(color: Colors.white70)),
-                    ],
-                  ),
-                ),
-                const Icon(Icons.chevron_right, color: Colors.white70),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
+  Future<void> _payInstallment(Credito credito, Map<String, dynamic> cuota) async {
+    final amount = _toDouble(cuota['cuota']);
+    final number = (cuota['numero_cuota'] as num?)?.toInt();
+    Navigator.of(context).pop();
+    final ok = await viewModel.pagarCredito(creditoId: credito.id, monto: amount, numeroCuota: number);
+    if (!mounted) return;
+    _toast(ok ? 'Pago registrado correctamente' : viewModel.error ?? 'No se pudo registrar el pago', ok ? AppColors.success : AppColors.error);
+  }
+
+  void _toast(String message, Color color) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message), backgroundColor: color));
+  }
+
+  Map<String, dynamic>? _firstPending(List<Map<String, dynamic>> items) {
+    for (final item in items) {
+      if (item['estado'] != 'PAGADO') return item;
+    }
+    return null;
   }
 
   Widget _infoCard({required String title, required String subtitle, required String value, required IconData icon, required Color color}) {
@@ -384,7 +524,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Card(
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: positive ? const Color(0xFFEAF8EF) : const Color(0xFFFDECEC),
+          backgroundColor: positive ? AppColors.success.withValues(alpha: 0.10) : AppColors.error.withValues(alpha: 0.10),
           child: Icon(positive ? Icons.south_west : Icons.north_east, color: positive ? AppColors.success : AppColors.error),
         ),
         title: Text(item.descripcion, maxLines: 1, overflow: TextOverflow.ellipsis),
@@ -400,6 +540,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final motivo = item['motivo_rechazo'] ?? item['condicion'];
     return AppCard(
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+      onTap: () => _showSolicitudDetail(item),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -412,7 +553,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               ),
               AppStatusChip(
-                label: estado,
+                label: _formatEstado(estado),
                 color: _statusColor(estado),
                 icon: _statusIcon(estado),
               ),
@@ -427,6 +568,113 @@ class _DashboardScreenState extends State<DashboardScreen> {
             const SizedBox(height: AppSpacing.xs),
             Text(motivo.toString(), style: AppTextStyles.caption),
           ],
+          const SizedBox(height: AppSpacing.md),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => _showSolicitudDetail(item),
+                  icon: const Icon(Icons.visibility_outlined),
+                  label: const Text('Ver estado'),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              if (estado.toUpperCase() == 'DESEMBOLSADO')
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: () => setState(() => currentIndex = 1),
+                    icon: const Icon(Icons.event_note_outlined),
+                    label: const Text('Ver credito'),
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showSolicitudDetail(Map<String, dynamic> item) async {
+    final estado = item['estado']?.toString().toUpperCase() ?? 'ENVIADO';
+    final motivo = item['motivo_rechazo'] ?? item['condicion'];
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      item['expediente']?.toString() ?? 'Solicitud BanBif',
+                      style: AppTextStyles.display.copyWith(fontSize: 20),
+                    ),
+                  ),
+                  AppStatusChip(label: _formatEstado(estado), color: _statusColor(estado), icon: _statusIcon(estado)),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              _detailLine('Monto solicitado', _formatNum(item['monto'])),
+              _detailLine('Monto aprobado', item['monto_aprobado'] == null ? 'Pendiente' : _formatNum(item['monto_aprobado'])),
+              _detailLine('Plazo', '${item['plazo_meses'] ?? 12} meses'),
+              _detailLine('Destino', item['destino']?.toString() ?? 'Capital de trabajo'),
+              _detailLine('Garantia', item['garantia']?.toString() ?? 'No registrada'),
+              if (motivo != null) _detailLine(estado == 'RECHAZADO' ? 'Motivo de rechazo' : 'Condicion', motivo.toString()),
+              const SizedBox(height: AppSpacing.lg),
+              if (estado == 'RECHAZADO')
+                const AppEmptyState(
+                  icon: Icons.cancel_outlined,
+                  title: 'No se genera cronograma',
+                  message: 'El expediente fue rechazado por comite y queda cerrado sin desembolso.',
+                )
+              else if (estado == 'CONDICIONADO')
+                const AppCard(
+                  child: Text(
+                    'El comite aprobo un monto reducido. Revisa el monto aprobado y espera desembolso para ver cronograma.',
+                    style: AppTextStyles.body,
+                  ),
+                )
+              else if (estado == 'DESEMBOLSADO')
+                FilledButton.icon(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    setState(() => currentIndex = 1);
+                  },
+                  icon: const Icon(Icons.credit_score_outlined),
+                  label: const Text('Ver credito y cronograma'),
+                )
+              else
+                const AppCard(
+                  child: Text('Tu solicitud sigue en proceso. Actualiza la app para consultar cambios.', style: AppTextStyles.body),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _detailLine(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(child: Text(label, style: AppTextStyles.caption)),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Text(
+              value,
+              textAlign: TextAlign.end,
+              style: AppTextStyles.bodyStrong,
+            ),
+          ),
         ],
       ),
     );
@@ -464,6 +712,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   String _mask(String value) => value.length <= 6 ? value : '**** ${value.substring(value.length - 4)}';
   String _format(double value) => _money.format(value);
+  double _toDouble(Object? value) => (value as num?)?.toDouble() ?? 0;
   String _formatNum(Object? value) => _format((value as num?)?.toDouble() ?? 0);
   Color _statusColor(String estado) {
     switch (estado.toUpperCase()) {
@@ -497,9 +746,42 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
+  String _formatEstado(String estado) {
+    switch (estado.toUpperCase()) {
+      case 'BORRADOR':
+        return 'Borrador';
+      case 'ENVIADO':
+        return 'Enviado';
+      case 'RECIBIDO_COMITE':
+        return 'Recibido por comite';
+      case 'EN_EVALUACION':
+        return 'En evaluacion';
+      case 'APROBADO':
+        return 'Aprobado';
+      case 'CONDICIONADO':
+        return 'Condicionado';
+      case 'RECHAZADO':
+        return 'Rechazado';
+      case 'DESEMBOLSADO':
+        return 'Desembolsado';
+      case 'PAGADO':
+        return 'Pagado';
+      default:
+        return estado.isEmpty ? 'Pendiente' : estado;
+    }
+  }
+
   void _logout() {
     Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (_) => false);
   }
+}
+
+class _Shortcut {
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _Shortcut(this.label, this.icon, this.onTap);
 }
 
 class _CreditRequestForm extends StatefulWidget {
@@ -617,7 +899,7 @@ class _CreditRequestFormState extends State<_CreditRequestForm> {
             child: ListTile(
               leading: Icon(Icons.check_circle, color: AppColors.success),
               title: Text('Solicitud enviada'),
-              subtitle: Text('El expediente fue registrado en el Core y enviado a cartera/comite.'),
+              subtitle: Text('El expediente fue registrado y enviado para evaluacion.'),
             ),
           ),
       ],
@@ -649,7 +931,7 @@ class _CreditRequestFormState extends State<_CreditRequestForm> {
     setState(() => sent = ok);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(ok ? 'Solicitud registrada en el Core BanBif' : widget.viewModel.error ?? 'No se pudo enviar'),
+        content: Text(ok ? 'Solicitud enviada para evaluacion' : widget.viewModel.error ?? 'No se pudo enviar'),
         backgroundColor: ok ? AppColors.success : AppColors.error,
       ),
     );

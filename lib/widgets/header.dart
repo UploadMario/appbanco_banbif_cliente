@@ -38,8 +38,9 @@ class Header extends StatelessWidget {
               height: 48,
               padding: const EdgeInsets.all(AppSpacing.sm),
               decoration: BoxDecoration(
-                color: Colors.white,
+                gradient: AppColors.bankingGradient,
                 borderRadius: AppRadius.input,
+                border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
               ),
               child: Image.asset('assets/banbif.png', fit: BoxFit.contain),
             ),
@@ -57,7 +58,7 @@ class Header extends StatelessWidget {
                   const SizedBox(height: AppSpacing.xs),
                   Text(
                     subtitle,
-                    style: AppTextStyles.caption.copyWith(color: Colors.white70),
+                    style: AppTextStyles.caption.copyWith(color: Colors.white.withValues(alpha: 0.92)),
                   ),
                 ],
               ),

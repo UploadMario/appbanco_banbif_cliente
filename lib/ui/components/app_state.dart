@@ -73,10 +73,19 @@ class AppLoading extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: AppCard(
+        color: AppColors.surface,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const CircularProgressIndicator(),
+            Container(
+              width: 54,
+              height: 54,
+              decoration: BoxDecoration(
+                color: AppColors.accentSoft,
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: const Center(child: CircularProgressIndicator()),
+            ),
             const SizedBox(height: AppSpacing.lg),
             Text(message, style: AppTextStyles.body),
           ],
@@ -105,10 +114,19 @@ class _StateCard extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.screen),
         child: AppCard(
+          color: AppColors.surface,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 46, color: color),
+              Container(
+                width: 58,
+                height: 58,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Icon(icon, size: 34, color: color),
+              ),
               const SizedBox(height: AppSpacing.md),
               Text(title, textAlign: TextAlign.center, style: AppTextStyles.title),
               const SizedBox(height: AppSpacing.sm),
